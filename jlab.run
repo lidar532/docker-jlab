@@ -1,0 +1,13 @@
+#!/usr/bin/bash
+# --mount type=bind,src="$(pwd)",target=/jlab \
+docker run \
+	-p 11000:8888 \
+        --user 1000:1000 \
+	--rm \
+	--mount type=bind,src="/",target=/jlab \
+    	-h "JLAB" \
+	--name JLAB \
+	-it \
+	jupyterlab:5 
+
+
