@@ -1,2 +1,21 @@
 # docker-jlab
-Docker with Jupyter-lab, sudo, vim, ping, ifconfig, git, rsync, ssh, nbdev, quarto, nodejs
+
+Builds a docker image and launcher script to make facilitate using Jupyter-lab
+as an IDE for generating Python packages, modules, test code, and documentaiton. 
+The rational for using this tool for Python development is to make it easier
+to build consistent packages and projects and make it easier to move the 
+projects from one machine to another.
+
+Creates a Docker image with:
+- Jupyter-lab,
+- sudo,
+- vim,
+- ping,
+- ifconfig,
+- git,
+- rsync,
+- ssh,
+- nbdev,
+- quarto,
+- nodejs
+
