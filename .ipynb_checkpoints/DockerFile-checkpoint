@@ -1,0 +1,91 @@
+# Dockerfile creating a ubuntu based JupyterLab development 
+# container.
+# W. Wright
+# lidar532@gmail.com
+#
+# Includes:
+#    - Make, ping, ifconfig, vim, git, ssh, rsync
+#    - python, Jupyter-lab, nbdev, quarto, nodejs
+#    - sudo
+#    
+# Todo:
+#
+
+FROM ubuntu:latest
+MAINTAINER "C. Wayne Wright"
+
+# Udate and upgrade
+# Install development tools
+
+# Add user.  
+# See: https://github.com/moby/moby/issues/5419  regarding
+# why the -l flag is used and needed.
+ENV USER_NAME wright
+ENV UID       1000
+ENV HOME      /home/$USER_NAME
+
+
+
+# Install system utilities we want to have around.
+RUN apt-get update && apt-get install   -y      \
+ 		    sudo                        \
+                    make                        \
+                    iputils-ping net-tools      \ 
+                    vim git ssh rsync           \ 
+                    curl                        &&\
+                    rm -rf /var/lib/apt/lists/*  
+
+# Add wright as user and configure sudo
+RUN useradd -m -l -u $UID -s /usr/bin/bash $USER_NAME 
+RUN echo "$USER_NAME:$USER_NAME" | chpasswd && adduser $USER_NAME sudo
+RUN echo "$USER_NAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Install nodejs. See: https://github.com/nodesource/distributions
+# Jupyter-lab needs nodejs for somethings.
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - &&  \
+    apt-get install -y nodejs
+
+
+# Switch to regular user.
+USER $USER_NAME
+
+
+# Install MiniConda 
+RUN cd $HOME &&\
+    curl https://repo.anaconda.com/miniconda/Miniconda3-py311_23.5.2-0-Linux-x86_64.sh \
+    -o   $HOME/Miniconda3-py311_23.5.2-0-Linux-x86_64.sh &&\
+    bash $HOME/Miniconda3-py311_23.5.2-0-Linux-x86_64.sh  -b &&\
+    rm $HOME/Miniconda3-py311_23.5.2-0-Linux-x86_64.sh &&\
+    echo "PATH=$HOME/miniconda3/bin/:$HOME/bin/:$PATH" >> /home/$USER_NAME/.bashrc 
+ENV PATH $HOME/miniconda3/bin/:$PATH
+
+# Install a script to start Jlab
+#RUN  mkdir $HOME/bin 
+#COPY jlab.sh    $HOME/bin/jlab.sh
+
+# Install Jupyterlab
+RUN cd $HOME &&\
+    conda install -c conda-forge jupyterlab         &&\
+    conda install panel                         -y  &&\
+    conda install -c fastai nbdev               -y
+
+# Install quarto which is used by nbdev for automatic 
+# documentation generattion
+USER root
+RUN cd /tmp &&\
+    wget https://github.com/quarto-dev/quarto-cli/releases/download/v1.3.450/quarto-1.3.450-linux-amd64.deb &&\
+    dpkg --install ./quarto-1.3.450-linux-amd64.deb &&\
+    rm -rf quarto-1.3.450-linux-amd64.deb Miniconda3-py311_23.5.2-0-Linux-x86_64.sh
+
+
+# Create Jupyterlab working dir mount point
+USER root
+RUN mkdir /jlab 
+
+# Switch to user, and setup the start.bash in the users bin
+USER $USER_NAME
+RUN  mkdir $HOME/bin 
+COPY jlab.sh    $HOME/bin/jlab.sh
+COPY start.bash $HOME/bin/start.bash
+CMD  /bin/bash  -c "source $HOME/bin/start.bash"
+
